@@ -1,0 +1,95 @@
+{
+ "fichero": "mt5_report_Exness_BTCUSDz_2026-10-12.html",
+ "plataforma": "MetaTrader 5 Strategy Tester · Exness · BTCUSDz H1 · desfase fijo 0 · 40 % equity",
+ "ea": "TIS_BTC_Lunes_v3.mq5 v1.1",
+ "desde": "2021-04-19",
+ "hasta": "2026-08-31",
+ "horas_entrada_servidor": [
+  0
+ ],
+ "dias_entrada": [
+  0
+ ],
+ "mt5": {
+  "n": 103,
+  "pf_neto": 1.594691146866002,
+  "win": 0.6019417475728155
+ },
+ "motor": {
+  "n": 100,
+  "pf": 1.4155374610299583,
+  "win": 0.57
+ },
+ "emparejadas": 97,
+ "solo_mt5": [
+  "2021-11-29",
+  "2023-04-24",
+  "2023-05-08",
+  "2023-08-21",
+  "2024-01-22",
+  "2024-05-27"
+ ],
+ "solo_motor": [
+  "2021-05-10",
+  "2021-08-16",
+  "2022-01-31"
+ ],
+ "dif_precio_entrada_pct": {
+  "mediana": 0.05082845372698097,
+  "max": 0.6292375915138093
+ },
+ "dif_retorno_bruto_pp": {
+  "mediana": 0.029640146888487706,
+  "max": 0.3200757166427204,
+  "correlacion": 0.9999138041853773
+ },
+ "costes_medidos_bps": {
+  "spread_ida_vuelta": 1.7734885087059034,
+  "comision_por_lado": 0.4815878080524869,
+  "swap_por_operacion": 4.10300254154781,
+  "swap_por_ano": {
+   "2021": 4.356124875256711,
+   "2022": 7.37207927413569,
+   "2023": 6.313621347916522,
+   "2024": 3.0312964177011352,
+   "2025": 1.975649498824963,
+   "2026": 2.690302457689932
+  }
+ },
+ "nota": "El historial de BTCUSDz en el tester empieza a finales de 2020: en 2021 la ventana del percentil es más corta que el año del motor. Las demás diferencias son lunes en el límite del p30 con las velas del CFD frente a las de Binance.",
+ "diferencias_explicadas": {
+  "log": "mt5_agente_Exness_BTCUSDz_2026-10-12.log",
+  "historial_mt5_desde": "2021-01-01",
+  "solo_motor": {
+   "2021-05-10": {
+    "pct_mt5": 20.7,
+    "pct_motor": 60.0,
+    "atr_mt5": 1.123,
+    "atr_motor": 1.138
+   },
+   "2021-08-16": {
+    "pct_mt5": 14.7,
+    "pct_motor": 33.8,
+    "atr_mt5": 0.977,
+    "atr_motor": 0.979
+   },
+   "2022-01-31": {
+    "pct_mt5": 23.0,
+    "pct_motor": 32.3,
+    "atr_mt5": 0.941,
+    "atr_motor": 0.997
+   }
+  },
+  "solo_mt5": {
+   "2021-11-29": 30.4,
+   "2023-04-24": 30.8,
+   "2023-05-08": 31.4,
+   "2023-08-21": 32.2,
+   "2024-01-22": 36.8,
+   "2024-05-27": 33.1
+  },
+  "atr_pct_dif_relativa_mediana_pct": 3.2,
+  "percentil_dif_mediana_puntos": 1.7,
+  "conclusion": "Las 3 del motor: mismo ATR%, pero en MT5 la ventana del percentil empieza en enero de 2021 (2021 muy volátil) y el lunes queda por debajo del p30. Las 6 de MT5: percentil entre 30,4 y 36,8, justo por encima del umbral; con las velas de Binance quedan por debajo. Ninguna es un error del EA."
+ }
+}

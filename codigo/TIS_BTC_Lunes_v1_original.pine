@@ -1,0 +1,69 @@
+// @version=6
+// BTC – Efecto Lunes 1H (core) [TIS v1] — la versión ORIGINAL de 2025 (Trade It Simple).
+// Es la que opera en real desde febrero de 2025 vía alertas → Make → exchange. Se publica tal cual para que se vea
+// de dónde viene la v3: filtros fijos de ATR% (0,40–1,20) y |retorno 24h| ≤ 4 %, sin stop, 100 % del equity.
+// Hora del gráfico = UTC. Reconciliada trade a trade con el motor de la guía (156 de 156 operaciones, mayo 2022 → septiembre 2026).
+strategy("BTC – Efecto Lunes 1H (core) [TIS v1] — simple (ATR+24h)",
+     overlay=true,
+     initial_capital=100000,
+     commission_type=strategy.commission.percent,
+     commission_value=0.0,
+     pyramiding=0,
+     process_orders_on_close=true,
+     calc_on_every_tick=false,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value = 100,
+     margin_long = 5,
+     margin_short = 5)
+
+// ========= Inputs =========
+groupG = "General"
+useDateRange = input.bool(false, "Usar rango de fechas", group=groupG)
+fromDate     = input.time(timestamp("2017-01-01T00:00:00"), "Desde", group=groupG)
+toDate       = input.time(timestamp("2035-12-31T23:59:59"), "Hasta", group=groupG)
+
+groupT = "Timing (hora del GRÁFICO)"
+enterHour = input.int(23, "Hora ENTRADA (Domingo)", minval=0, maxval=23, group=groupT)
+exitHour  = input.int(23, "Hora SALIDA (Lunes)",   minval=0, maxval=23, group=groupT)
+
+groupA = "Filtro ATR% (defensivo)"
+useATR = input.bool(true,  "Activar filtro ATR%", group=groupA)
+atrLen = input.int(48,     "ATR len", minval=1, group=groupA)
+atrMin = input.float(0.40, "ATR% mín", step=0.05, group=groupA)
+atrMax = input.float(1.20, "ATR% máx", step=0.05, group=groupA)
+
+group24 = "Filtro |retorno 24h|"
+useAbs24 = input.bool(true, "Activar filtro |ret 24h| ≤ %", group=group24)
+abs24Max = input.float(4.0, "Umbral %", step=0.1, group=group24)
+
+// ========= Calendario / barras =========
+bool inDate = not useDateRange or (time >= fromDate and time <= toDate)
+bool isSun  = dayofweek == dayofweek.sunday
+bool isMon  = dayofweek == dayofweek.monday
+int  h      = hour
+int  m      = minute
+
+bool sundayCloseBar = isSun and h == enterHour and m == 0 and barstate.isconfirmed
+bool mondayExitBar  = isMon and h == exitHour  and m == 0 and barstate.isconfirmed
+
+// ========= Filtros =========
+float atrPerc = ta.atr(atrLen) / close * 100.0
+bool  atrOK   = not useATR or (atrPerc >= atrMin and atrPerc <= atrMax)
+
+float ret24   = na(close[24]) ? na : (close/close[24] - 1.0) * 100.0
+bool  absOK   = not useAbs24 or (not na(ret24) and math.abs(ret24) <= abs24Max)
+
+// ========= Entrada / salida =========
+bool canEnter = inDate and sundayCloseBar and strategy.position_size == 0 and atrOK and absOK
+if canEnter
+    strategy.entry("Long-Lunes", strategy.long, comment="LONG " + str.tostring(enterHour) + ":00")
+
+if mondayExitBar and strategy.position_size > 0
+    strategy.close("Long-Lunes", comment="CLOSE " + str.tostring(exitHour) + ":00")
+
+// ========= Visual =========
+bgcolor(isMon ? color.new(color.green, 90) : na, title="Lunes (día de salida)")
+plot(useATR   ? atrPerc         : na, title="ATR% (filtro)",      color=color.new(color.aqua, 0))
+plot(useAbs24 ? math.abs(ret24) : na, title="Abs(retorno 24h) %", color=color.new(color.orange, 0))
+plotshape(sundayCloseBar and canEnter, title="Entrada", style=shape.triangleup, location=location.belowbar, size=size.tiny, text="LONG", color=color.new(color.green, 0))
+plotshape(mondayExitBar and strategy.position_size[1] > 0, title="Salida", style=shape.triangledown, location=location.abovebar, size=size.tiny, text="CLOSE", color=color.new(color.red, 0))

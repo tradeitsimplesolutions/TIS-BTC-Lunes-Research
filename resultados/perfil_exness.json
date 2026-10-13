@@ -1,0 +1,43 @@
+{
+ "nombre": "Exness (CFD MT5)",
+ "coste_lado_bps": 5.38,
+ "ida_vuelta_pct": 0.10759999999999999,
+ "nota": "CFD BTCUSDz: spread flotante, comisión 4,375 $/lote en la entrada y swap largo de una noche",
+ "TODO": {
+  "n": 183,
+  "pf": 1.674790885765949,
+  "pfnb": 1.592703642818067,
+  "mdd": -0.15069345030088824,
+  "wr": 0.5628415300546448,
+  "expectancy": 0.0034871723806454086,
+  "ret_total": 0.8297302549118446,
+  "barras_media": 23.961748633879782,
+  "mejor": 0.07763024687831398,
+  "peor": -0.061915543061400416,
+  "desv": 0.0191116630172902,
+  "t_stat": 2.4683144289301637,
+  "cagr": 0.0683476888881771,
+  "mdd_diario": -0.15566922153941676,
+  "exposicion": 0.10977804439112178,
+  "sharpe_semanal": 0.8135873249209913
+ },
+ "OOS": {
+  "n": 56,
+  "pf": 3.1701194616704544,
+  "pfnb": 2.841214994044457,
+  "mdd": -0.04140601622703541,
+  "wr": 0.7142857142857143,
+  "expectancy": 0.004798285744110795,
+  "ret_total": 0.3029310093572124,
+  "barras_media": 24.0,
+  "mejor": 0.04072492237375949,
+  "peor": -0.020388406148236494,
+  "desv": 0.011260690448207438,
+  "t_stat": 3.188710564575058,
+  "cagr": 0.10208148800395311,
+  "mdd_diario": -0.04069142329390036,
+  "exposicion": 0.11311311311311312,
+  "sharpe_semanal": 1.8596419777222781
+ },
+ "metodo": "perfil_sin_velas.py: trades.csv + equity_diaria.csv con los costes del perfil (sin regenerar velas)"
+}

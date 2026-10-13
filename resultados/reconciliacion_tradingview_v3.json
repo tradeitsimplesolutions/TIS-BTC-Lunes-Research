@@ -1,0 +1,39 @@
+{
+ "fichero": "tradingview_export_v3_BINANCE_2026-10-12.csv",
+ "plataforma": "TradingView Strategy Tester · BINANCE:BTCUSDT 1H · comisión 0,14 % por lado · 40 % equity",
+ "script": "TIS_BTC_Lunes_v3.pine",
+ "desde": "2017-09-11",
+ "hasta": "2026-08-31",
+ "horas_entrada_utc": [
+  23
+ ],
+ "dias_entrada_utc": [
+  6
+ ],
+ "tv": {
+  "n": 183,
+  "pf": 1.5192747402623448,
+  "win": 0.5409836065573771
+ },
+ "motor": {
+  "n": 183,
+  "pf": 1.5106064906046517,
+  "win": 0.5355191256830601
+ },
+ "emparejadas": 183,
+ "solo_tv": [],
+ "solo_motor": [],
+ "dif_precio_entrada_pct": {
+  "mediana": 2.2773093255601395e-05,
+  "max": 0.5597527454611728
+ },
+ "dif_retorno_pp": {
+  "mediana": 0.0040000000000000105,
+  "max": 0.9690000000000004,
+  "correlacion": 0.9997326640747338
+ },
+ "signo_distinto": [
+  "2018-01-15"
+ ],
+ "nota": "TradingView entra al cierre de la vela del domingo 23:00 UTC y el motor a la apertura del lunes 00:00 UTC: es casi el mismo precio."
+}

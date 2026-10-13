@@ -1,0 +1,6 @@
+# datos con velas: se regeneran con descargar_datos.py
+data/*.csv
+__pycache__/
+*.pyc
+.DS_Store
+dist/

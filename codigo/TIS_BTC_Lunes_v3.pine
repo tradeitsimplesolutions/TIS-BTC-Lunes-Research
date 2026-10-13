@@ -1,0 +1,168 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Trade It Simple
+//@version=6
+// ============================================================================================================
+// BTC · Efecto Lunes v3 [TIS] — la versión VALIDADA (Trade It Simple, octubre de 2026)
+// Réplica del motor de Python del repositorio (motor/btc_lunes_motor.py, versión "v3").
+//
+// REGLA (todas las horas en UTC, velas de 1 hora, BTCUSDT spot):
+//   · Entrada : compra al cierre de la vela de las 23:00 del domingo  (= apertura de las 00:00 del lunes).
+//   · Salida  : vende al cierre de la vela de las 23:00 del lunes     (= apertura de las 00:00 del martes). 24 velas.
+//               Sin stop, sin take profit.
+//   · Permiso : ATR%(48) de la vela de señal ≥ percentil 30 de las últimas 8.760 velas (un año).
+//   · Calendario: no se opera el primer lunes del mes (día 1 a 7).
+//   · Tamaño  : 40 % del equity, sin apalancamiento (el tope que admite el Monte Carlo).
+//   · Costes  : 0,14 % por lado = 1 bp (½ spread) + 3 bps (slippage) + 10 bps (comisión taker Binance spot).
+//
+// PARIDAD CON EL MOTOR (lo que cambia respecto al borrador anterior):
+//   1. Horas y días se leen SIEMPRE en UTC (hour(time,"UTC")…), no en la zona del exchange ni del gráfico.
+//   2. ATR = RMA de Wilder sembrada con el primer True Range, como pandas ewm(alpha=1/48, adjust=False).
+//   3. Percentil = rank(pct=True) de pandas: posición media (empates promediados) del valor actual dentro de la
+//      ventana, incluido él mismo; empieza a contar a partir de 500 velas (min_periods=500). ta.percentrank()
+//      no incluye el valor actual y exige 8.760 velas previas: por eso no se usa.
+//   4. Comisión 0,14 % por lado (coste total del motor) en lugar de 0,10 %.
+//   5. Salida por tiempo (24 h después de la entrada) y no por "lunes a las 23:00": si falta una vela, no se queda
+//      la posición abierta una semana.
+//
+// AVISO: el percentil necesita historia. Con pocas velas cargadas (plan gratuito ≈ 5.000 velas de 1 h) la ventana es
+// más corta que la del motor y algunos lunes en el límite del p30 pueden cambiar. El motor de Python es la referencia
+// de las cifras; este script es para operar, alertar y comprobar la paridad en el Strategy Tester.
+// Material educativo. No es asesoría financiera.
+// ============================================================================================================
+strategy("BTC · Efecto Lunes v3 [TIS]", shorttitle="TIS Lunes v3", overlay=true,
+     initial_capital=100000, currency=currency.USD,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=40,
+     commission_type=strategy.commission.percent, commission_value=0.14, slippage=0,
+     pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+     margin_long=100, margin_short=100)
+
+// ========= Parámetros (los de la validación; no son para optimizar) =========
+grpR = "Regla"
+enterHour  = input.int(23,    "Hora UTC de la vela de señal (domingo)", minval=0, maxval=23, group=grpR)
+holdHours  = input.int(24,    "Horas en posición",                       minval=1, maxval=168, group=grpR)
+atrLen     = input.int(48,    "ATR (velas)",                             minval=1, group=grpR)
+pctWindow  = input.int(8760,  "Ventana del percentil (velas = un año)",  minval=500, maxval=20000, group=grpR)
+pctMinBars = input.int(500,   "Velas mínimas para el percentil",         minval=50, group=grpR, tooltip="Igual que min_periods=500 del motor. Antes de eso no hay permiso.")
+pctMin     = input.float(30,  "Permiso: percentil mínimo del ATR%",      minval=0, maxval=100, step=5, group=grpR)
+skipFirst  = input.bool(true, "No operar el primer lunes del mes (día 1–7)", group=grpR)
+
+grpF = "Rango de fechas (backtest)"
+useRange   = input.bool(false, "Limitar el backtest a un rango", group=grpF)
+fromDate   = input.time(timestamp("UTC", 2017, 8, 17, 0, 0), "Desde", group=grpF)
+toDate     = input.time(timestamp("UTC", 2035, 12, 31, 23, 0), "Hasta", group=grpF)
+
+grpW = "Alertas"
+useAlerts  = input.bool(true, "Avisar en la entrada y en la salida", group=grpW, tooltip="Crea una alerta con la condición \"alert() function calls only\" para recibir los avisos.")
+sendDiag   = input.bool(true, "Avisar también los domingos sin entrada", group=grpW)
+
+grpV = "Visual"
+showPanel  = input.bool(true, "Mostrar panel de estado", group=grpV)
+
+// ========= Comprobaciones =========
+if barstate.isfirst and timeframe.period != "60"
+    runtime.error("TIS Lunes v3: usa velas de 1 hora (timeframe 60). Ahora: " + timeframe.period)
+
+// ========= Calendario (UTC) =========
+const int HOUR_MS = 3600000
+bool isSunUTC   = dayofweek(time, "UTC") == dayofweek.sunday
+bool isMonUTC   = dayofweek(time, "UTC") == dayofweek.monday
+bool signalBar  = isSunUTC and hour(time, "UTC") == enterHour and minute(time, "UTC") == 0
+// el lunes que empieza al cerrar la vela de señal (la vela siguiente abre a time + 1 h)
+int  nextDay    = dayofmonth(time + HOUR_MS, "UTC")
+bool firstMon   = nextDay <= 7
+bool inRange    = not useRange or (time >= fromDate and time <= toDate)
+
+// ========= ATR% (RMA de Wilder, sembrada con el primer TR, como pandas ewm adjust=False) =========
+float trueRange = na(close[1]) ? high - low : math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1]))
+var float rmaTR = na
+rmaTR := na(rmaTR) ? trueRange : rmaTR + (trueRange - rmaTR) / atrLen
+float atrPct = bar_index >= atrLen - 1 ? rmaTR / close * 100.0 : na
+
+// ========= Percentil del ATR% en su año (= pandas rolling(8760, min_periods=500).rank(pct=True)) =========
+// La ventana es un buffer circular (O(1) por vela) y el rango solo se calcula en las velas de señal (una por semana).
+var array<float> win = array.new_float(pctWindow, na)
+var int wPos   = 0
+var int wCount = 0
+if not na(atrPct)
+    array.set(win, wPos, atrPct)
+    wPos   := (wPos + 1) % pctWindow
+    wCount := math.min(wCount + 1, pctWindow)
+
+// x ya está dentro de la ventana (se acaba de guardar): rango medio de x entre los iguales / n → 0–100
+pctRank(array<float> a, int n, float x) =>
+    int less = 0
+    int eq = 0
+    for v in a
+        if not na(v)
+            if v < x
+                less += 1
+            else if v == x
+                eq += 1
+    n > 0 ? (less + (eq - 1) / 2.0 + 1.0) / n * 100.0 : na
+
+float atrRank = na
+if signalBar and not na(atrPct) and wCount >= pctMinBars
+    atrRank := pctRank(win, wCount, atrPct)
+
+bool permiso      = not na(atrRank) and atrRank >= pctMin
+bool calendarioOK = not (skipFirst and firstMon)
+
+// ========= Entrada =========
+var int exitAt = na          // hora (ms) a la que debe cerrarse la posición abierta
+bool flat     = strategy.position_size == 0
+bool canEnter = signalBar and flat and inRange and permiso and calendarioOK
+
+str_num(float v, string f) => na(v) ? "na" : str.tostring(v, f)
+
+if canEnter
+    strategy.entry("Lunes", strategy.long, comment="LONG lunes")
+    exitAt := time_close + holdHours * HOUR_MS
+    if useAlerts
+        alert("TIS Lunes v3 · " + syminfo.ticker + " · COMPRA lunes 00:00 UTC a " + str.tostring(close, format.mintick) +
+              " · ATR% " + str_num(atrPct, "#.###") + " = percentil " + str_num(atrRank, "#.#"), alert.freq_once_per_bar_close)
+
+// ========= Salida (por tiempo: 24 h después de la entrada) =========
+bool exitNow = strategy.position_size > 0 and not na(exitAt) and time_close >= exitAt
+if exitNow
+    strategy.close("Lunes", comment="CLOSE martes 00:00")
+    exitAt := na
+    if useAlerts
+        alert("TIS Lunes v3 · " + syminfo.ticker + " · VENTA martes 00:00 UTC a " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+
+// ========= Diagnóstico: domingo sin entrada =========
+string reason = not inRange ? "fuera del rango de fechas" : na(atrRank) ? "sin historia para el percentil" : not permiso ? "sin permiso de volatilidad" : not calendarioOK ? "primer lunes del mes" : not flat ? "posición abierta" : ""
+bool noEntry = signalBar and not canEnter
+if noEntry and useAlerts and sendDiag
+    alert("TIS Lunes v3 · " + syminfo.ticker + " · este lunes NO se opera: " + reason +
+          " · ATR% " + str_num(atrPct, "#.###") + " = percentil " + str_num(atrRank, "#.#"), alert.freq_once_per_bar_close)
+
+// ========= Visual =========
+bgcolor(isMonUTC ? color.new(color.green, 93) : na, title="Lunes (UTC)")
+plotshape(canEnter, title="Entrada", style=shape.triangleup, location=location.belowbar, size=size.tiny, text="LONG", textcolor=color.green, color=color.new(color.green, 0))
+plotshape(exitNow, title="Salida", style=shape.triangledown, location=location.abovebar, size=size.tiny, text="CLOSE", textcolor=color.red, color=color.new(color.red, 0))
+plotshape(noEntry, title="Domingo sin entrada", style=shape.xcross, location=location.belowbar, size=size.tiny, color=color.new(color.gray, 0))
+
+// Último percentil calculado (el de la última vela de señal) para el panel
+var float lastRank = na
+var float lastAtr  = na
+var string lastMsg = "—"
+if signalBar
+    lastRank := atrRank
+    lastAtr  := atrPct
+    lastMsg  := canEnter ? "entró" : reason
+
+var table panel = table.new(position.top_right, 2, 6, bgcolor=color.new(#0d3d24, 10), border_width=1, border_color=color.new(color.white, 80))
+if showPanel and barstate.islast
+    color tx = color.white
+    table.cell(panel, 0, 0, "TIS · Lunes v3", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 0, strategy.position_size > 0 ? "EN POSICIÓN" : "FUERA", text_color=strategy.position_size > 0 ? color.lime : tx, text_size=size.small)
+    table.cell(panel, 0, 1, "ATR%(" + str.tostring(atrLen) + ") ahora", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 1, str_num(atrPct, "#.###") + " %", text_color=tx, text_size=size.small)
+    table.cell(panel, 0, 2, "Percentil ahora", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 2, wCount >= pctMinBars and not na(atrPct) ? str_num(pctRank(win, wCount, atrPct), "#.#") : "sin historia", text_color=tx, text_size=size.small)
+    table.cell(panel, 0, 3, "Último domingo", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 3, "p" + str_num(lastRank, "#.#") + " · " + lastMsg, text_color=tx, text_size=size.small)
+    table.cell(panel, 0, 4, "Velas en la ventana", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 4, str.tostring(wCount) + " / " + str.tostring(pctWindow), text_color=wCount < pctWindow ? color.orange : tx, text_size=size.small)
+    table.cell(panel, 0, 5, "Umbral", text_color=tx, text_size=size.small)
+    table.cell(panel, 1, 5, "≥ p" + str.tostring(pctMin, "#") + (skipFirst ? " · sin 1.er lunes" : ""), text_color=tx, text_size=size.small)
