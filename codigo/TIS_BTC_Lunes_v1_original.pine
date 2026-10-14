@@ -1,6 +1,6 @@
 // @version=6
 // BTC – Efecto Lunes 1H (core) [TIS v1] — la versión ORIGINAL de 2025 (Trade It Simple).
-// Es la que opera en real desde febrero de 2025 vía alertas → Make → exchange. Se publica tal cual para que se vea
+// Es la que opera en real desde febrero de 2025 vía alertas de TradingView al exchange. Se publica tal cual para que se vea
 // de dónde viene la v3: filtros fijos de ATR% (0,40–1,20) y |retorno 24h| ≤ 4 %, sin stop, 100 % del equity.
 // Hora del gráfico = UTC. Reconciliada trade a trade con el motor de la guía (156 de 156 operaciones, mayo 2022 → septiembre 2026).
 strategy("BTC – Efecto Lunes 1H (core) [TIS v1] — simple (ATR+24h)",

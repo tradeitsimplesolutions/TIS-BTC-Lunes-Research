@@ -26,7 +26,7 @@ def main():
     mot = pd.DataFrame(dict(lunes=[x["entrada"].normalize() for x in tr], px_in=[x["px_ent"] for x in tr], ret=[x["ret"] * 100 for x in tr]))
     j = e[["lunes", "Price USDT", "Return %"]].merge(mot, on="lunes", how="outer", indicator=True); both = j[j._merge == "both"]
     pf = lambda r: float(r[r > 0].sum() / -r[r <= 0].sum())
-    # tramo en REAL: desde el 1 de febrero de 2025 todo lo que hay en TradingView son operaciones reales (alertas → Make → exchange)
+    # tramo en REAL: desde el 1 de febrero de 2025 todo lo que hay en TradingView son operaciones reales (alertas de TradingView → exchange)
     # Desde el 2026-10-02: a las operaciones reales se les mete la comisión de Binance spot (14 bps por lado = 0,28 % por ida y vuelta).
     from btc_lunes_motor import coste_lado
     LIVE = pd.Timestamp("2025-02-01"); coste_rt = coste_lado("binance") * 2 * 100

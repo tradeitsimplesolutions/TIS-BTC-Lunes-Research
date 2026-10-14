@@ -59,7 +59,7 @@ python motor/construir_html.py        # comprueba los resultados (motor/test_res
 │   ├── test_resultados.py         Pruebas de coherencia (las lanza construir_html.py)
 │   ├── comun.py · pagina_ficha.py · pagina_manual.py · construir_html.py
 ├── codigo/
-│   ├── TIS_BTC_Lunes_v3.pine      Pine Script v6 de la versión validada (alertas para Make)
+│   ├── TIS_BTC_Lunes_v3.pine      Pine Script v6 de la versión validada (señales y alertas)
 │   ├── TIS_BTC_Lunes_v3.mq5       El robot para MetaTrader 5 (v1.1; se compila en MetaEditor con F7)
 │   └── TIS_BTC_Lunes_v1_original.pine   La versión original de 2025, la que opera en real desde febrero de 2025
 ├── resultados/
