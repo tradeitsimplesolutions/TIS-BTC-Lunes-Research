@@ -135,7 +135,7 @@ def ficha():
     hero = f"""<header class="hero"><div class="wrap">
 <div class="eyebrow">Estrategia #2 · Estacional · Bitcoin</div>
 <h1>BTC · Efecto Lunes<small>Compra el lunes de Bitcoin, el día en que vuelve el dinero. Solo cuando hay movimiento. Y déjalo correr el día entero.</small></h1>
-<div class="badges"><span class="badge c1">Estacional · ciclo semanal</span><span class="badge c2">Bitcoin · BTC/USDT</span><span class="badge c3">Velas de 1 hora · 24 h en posición</span><span class="badge c4">Solo largos</span><span class="badge c5">Automatizada · MetaTrader 5 (y alertas de TradingView)</span><span class="badge c6">{anos} años de datos · en real desde {fecha(meta['live_desde'])[-8:]}</span></div>
+<div class="badges"><span class="badge c1">Estacional · ciclo semanal</span><span class="badge c2">Bitcoin · BTC/USDT</span><span class="badge c3">Velas de 1 hora · 24 h en posición</span><span class="badge c4">Solo largos</span><span class="badge c5">Automatizada · MetaTrader 5 y TradingView</span><span class="badge c6">{anos} años de datos · en real desde {fecha(meta['live_desde'])[-8:]}</span></div>
 <div class="strip"><div><b>Motor usado</b><span>Sentinel</span></div><div><b>Método</b><span>TIS</span></div><div><b>Fuente de datos</b><span>Binance + Coinbase</span></div><div><b>Replícalo tú</b><a href="{REPO_URL}">Repositorio abierto: datos, motor y código →</a></div></div>
 <div class="oos-head"><h3>Números fuera de muestra</h3><span>{fecha(meta['oos_desde'])} → {fecha(meta['oos_hasta'])} · datos que la regla nunca vio · {rob} % del capital por operación (el robot) · costes de Binance incluidos</span></div>
 <div class="kpis6">
